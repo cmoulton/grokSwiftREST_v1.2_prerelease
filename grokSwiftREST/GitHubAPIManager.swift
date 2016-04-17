@@ -33,30 +33,8 @@ class GitHubAPIManager {
     }
   }
   
-  func doGetWithBasicAuth() -> Void {
-    let username = "myUsername"
-    let password = "myPassword"
-    Alamofire.request(.GET, "https://httpbin.org/basic-auth/\(username)/\(password)")
-      .authenticate(user: username, password: password)
-      .responseString { response in
-        if let receivedString = response.result.value {
-          print(receivedString)
-        }
-    }
   }
-
-  func doGetWithBasicAuthCredential() -> Void {
-    let username = "myUsername"
-    let password = "myPassword"
-    
-    let credential = NSURLCredential(user: username, password: password,
-                                     persistence: NSURLCredentialPersistence.ForSession)
-    
-    Alamofire.request(.GET, "https://httpbin.org/basic-auth/\(username)/\(password)")
-      .authenticate(usingCredential: credential)
       .responseString { response in
-        if let receivedString = response.result.value {
-          print(receivedString)
         }
     }
   }
