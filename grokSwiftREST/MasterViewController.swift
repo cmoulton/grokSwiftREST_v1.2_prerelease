@@ -99,6 +99,14 @@ class MasterViewController: UITableViewController {
     }
   }
   
+  func showOAuthLoginView() {
+    let storyboard = UIStoryboard(name: "Main", bundle: NSBundle.mainBundle())
+    if let loginVC = storyboard.instantiateViewControllerWithIdentifier(
+      "LoginViewController") as? LoginViewController {
+      self.presentViewController(loginVC, animated: true, completion: nil)
+    }
+  }
+  
   override func didReceiveMemoryWarning() {
     super.didReceiveMemoryWarning()
     // Dispose of any resources that can be recreated.
