@@ -211,6 +211,11 @@ class GitHubAPIManager {
     (Result<[Gist], NSError>, String?) -> Void) {
     Alamofire.request(urlRequest)
       .responseArray { (response:Response<[Gist], NSError>) in
+        if let urlResponse = response.response,
+          authError = self.checkUnauthorized(urlResponse) {
+          completionHandler(.Failure(authError), nil)
+          return
+        }
         // need to figure out if this is the last page
         // check the link header, if present
         let next = self.parseNextPageFromHeaders(response.response)
@@ -284,6 +289,18 @@ class GitHubAPIManager {
       let endIndex = nextURL.endIndex.advancedBy(-2)
       let urlRange = startIndex..<endIndex
       return nextURL.substringWithRange(urlRange)
+    }
+    return nil
+  }
+  
+  func checkUnauthorized(urlResponse: NSHTTPURLResponse) -> (NSError?) {
+    if (urlResponse.statusCode == 401) {
+      self.OAuthToken = nil
+      let lostOAuthError = NSError(domain: NSURLErrorDomain,
+                                   code: NSURLErrorUserAuthenticationRequired,
+                                   userInfo: [NSLocalizedDescriptionKey: "Not Logged In",
+                                    NSLocalizedRecoverySuggestionErrorKey: "Please re-enter your GitHub credentials"])
+      return lostOAuthError
     }
     return nil
   }

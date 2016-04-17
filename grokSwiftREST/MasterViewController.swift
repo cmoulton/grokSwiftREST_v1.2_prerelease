@@ -65,7 +65,13 @@ class MasterViewController: UITableViewController,
       
       guard result.error == nil else {
         print(result.error)
-        // TODO: display error
+        self.nextPageURLString = nil
+        
+        self.isLoading = false
+        if result.error?.domain == NSURLErrorDomain &&
+          result.error?.code == NSURLErrorUserAuthenticationRequired {
+          self.showOAuthLoginView()
+        }
         return
       }
       
