@@ -54,7 +54,7 @@ class MasterViewController: UITableViewController,
   
   func loadGists(urlToLoad: String?) {
     self.isLoading = true
-    GitHubAPIManager.sharedInstance.fetchPublicGists(urlToLoad) { (result, nextPage) in
+    GitHubAPIManager.sharedInstance.fetchMyStarredGists(urlToLoad) { (result, nextPage) in
       self.isLoading = false
       self.nextPageURLString = nextPage
       
@@ -99,10 +99,23 @@ class MasterViewController: UITableViewController,
   }
   
   func loadInitialData() {
+    isLoading = true
+    GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler = { error in
+      guard error == nil else {
+        print(error)
+        self.isLoading = false
+        // TODO: handle error
+        // Something went wrong, try again
+        self.showOAuthLoginView()
+        return
+      }
+      self.loadGists(nil)
+    }
+    
     if (!GitHubAPIManager.sharedInstance.hasOAuthToken()) {
       showOAuthLoginView()
     } else {
-      GitHubAPIManager.sharedInstance.printMyStarredGistsWithOAuth2()
+      loadGists(nil)
     }
   }
   
@@ -119,6 +132,13 @@ class MasterViewController: UITableViewController,
   func didTapLoginButton() {
     self.dismissViewControllerAnimated(false) {
       guard let authURL = GitHubAPIManager.sharedInstance.URLToStartOAuth2Login() else {
+        if let completionHandler = GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler {
+          let error = NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
+                              userInfo: [NSLocalizedDescriptionKey:
+                                "Could not create an OAuth authorization URL",
+                                NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"])
+          completionHandler(error)
+        }
         return
       }
       self.safariViewController = SFSafariViewController(URL: authURL)
@@ -225,7 +245,7 @@ class MasterViewController: UITableViewController,
   func refresh(sender:AnyObject) {
     GitHubAPIManager.sharedInstance.isLoadingOAuthToken = false
     nextPageURLString = nil // so it doesn't try to append the results
-    loadGists(nil)
+    loadInitialData()
   }
   
   // MARK: - Safari View Controller Delegate
