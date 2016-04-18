@@ -13,8 +13,8 @@ import Locksmith
 
 class GitHubAPIManager {
   static let sharedInstance = GitHubAPIManager()
-  let clientID: String = "1234567890"
-  let clientSecret: String = "abcdefghijkl"
+  let clientID: String = "d33ed42e43f5c7bbdd96"
+  let clientSecret: String = "0bc156ce11b143cde5c3a1a2a52c406b78aaacd1"
   var isLoadingOAuthToken: Bool = false
   
   static let ErrorDomain = "com.error.GitHubAPIManager"
@@ -331,6 +331,30 @@ class GitHubAPIManager {
           return
         }
         completionHandler(.Success(true))
+    }
+  }
+  
+  func starGist(gistId: String, completionHandler: (NSError?) -> Void) {
+    Alamofire.request(GistRouter.Star(gistId))
+      .validate(statusCode: [204])
+      .response { (request, response, data, error) in
+        guard error == nil else {
+          print(error)
+          return
+        }
+        completionHandler(error)
+    }
+  }
+  
+  func unstarGist(gistId: String, completionHandler: (NSError?) -> Void) {
+    Alamofire.request(GistRouter.Unstar(gistId))
+      .validate(statusCode: [204])
+      .response { (request, response, data, error) in
+        guard error == nil else {
+          print(error)
+          return
+        }
+        completionHandler(error)
     }
   }
 }

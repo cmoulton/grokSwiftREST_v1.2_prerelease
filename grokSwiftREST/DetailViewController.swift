@@ -12,6 +12,7 @@ import SafariServices
 class DetailViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
   @IBOutlet weak var tableView: UITableView!
   var isStarred: Bool?
+  var alertController: UIAlertController?
   
   var gist: Gist? {
     didSet {
@@ -35,6 +36,17 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
       result in
       guard result.error == nil else {
         print(result.error)
+        if result.error?.domain == NSURLErrorDomain &&
+          result.error?.code == NSURLErrorUserAuthenticationRequired {
+          self.alertController = UIAlertController(title:
+            "Could not get starred status", message: result.error?.description,
+                                            preferredStyle: .Alert)
+          // add ok button
+          let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+          self.alertController?.addAction(okAction)
+          self.presentViewController(self.alertController!, animated:true,
+                                     completion: nil)
+        }
         return
       }
       if let status = result.value where self.isStarred == nil { // just got it
@@ -79,32 +91,45 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
   func tableView(tableView: UITableView, cellForRowAtIndexPath
     indexPath: NSIndexPath)
     -> UITableViewCell {
-    let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath)
-    
-    if indexPath.section == 0 {
-      if indexPath.row == 0 {
-        cell.textLabel?.text = gist?.description
-      } else if indexPath.row == 1 {
-        cell.textLabel?.text = gist?.ownerLogin
-      } else {
-        if let starred = isStarred {
-          if starred {
-            cell.textLabel?.text = "Unstar"
-          } else {
-            cell.textLabel?.text = "Star"
+      let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath)
+      
+      if indexPath.section == 0 {
+        if indexPath.row == 0 {
+          cell.textLabel?.text = gist?.description
+        } else if indexPath.row == 1 {
+          cell.textLabel?.text = gist?.ownerLogin
+        } else {
+          if let starred = isStarred {
+            if starred {
+              cell.textLabel?.text = "Unstar"
+            } else {
+              cell.textLabel?.text = "Star"
+            }
           }
         }
+      } else {
+        if let file = gist?.files?[indexPath.row] {
+          cell.textLabel?.text = file.filename
+        }
       }
-    } else {
-      if let file = gist?.files?[indexPath.row] {
-        cell.textLabel?.text = file.filename
-      }
-    }
-    return cell
+      return cell
   }
   
   func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-    if indexPath.section == 1 {
+    if indexPath.section == 0 {
+      if indexPath.row == 2 { // star or unstar
+        guard let starred = isStarred else {
+          return
+        }
+        if starred {
+          // unstar
+          unstarThisGist()
+        } else {
+          // star
+          starThisGist()
+        }
+      }
+    } else if indexPath.section == 1 {
       guard let file = gist?.files?[indexPath.row],
         urlString = file.raw_url,
         url = NSURL(string: urlString) else {
@@ -113,6 +138,70 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
       let safariViewController = SFSafariViewController(URL: url)
       safariViewController.title = file.filename
       self.navigationController?.pushViewController(safariViewController, animated: true)
+    }
+  }
+  
+  func starThisGist() {
+    guard let gistId = gist?.id else {
+      return
+    }
+    GitHubAPIManager.sharedInstance.starGist(gistId) {
+      (error) in
+      guard error == nil else {
+        print(error)
+        if error?.domain == NSURLErrorDomain &&
+          error?.code == NSURLErrorUserAuthenticationRequired {
+          self.alertController = UIAlertController(title: "Could not star gist",
+                                                   message: error?.description,
+                                                   preferredStyle: .Alert)
+        } else {
+          self.alertController = UIAlertController(title: "Could not star gist",
+                                                   message: "Sorry, your gist couldn't be starred. " +
+            "Maybe GitHub is down or you don't have an internet connection.",
+                                                   preferredStyle: .Alert)
+        }
+        // add ok button
+        let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+        self.alertController?.addAction(okAction)
+        self.presentViewController(self.alertController!, animated:true, completion: nil)
+        return
+      }
+      self.isStarred = true
+      self.tableView.reloadRowsAtIndexPaths(
+        [NSIndexPath(forRow: 2, inSection: 0)],
+        withRowAnimation: .Automatic)
+    }
+  }
+  
+  func unstarThisGist() {
+    guard let gistId = gist?.id else {
+      return
+    }
+    GitHubAPIManager.sharedInstance.unstarGist(gistId) {
+      (error) in
+      guard error == nil else {
+        print(error)
+        if error?.domain == NSURLErrorDomain &&
+          error?.code == NSURLErrorUserAuthenticationRequired {
+          self.alertController = UIAlertController(title: "Could not unstar gist",
+                                                   message: error?.description,
+                                                   preferredStyle: .Alert)
+        } else {
+          self.alertController = UIAlertController(title: "Could not unstar gist",
+                                                   message: "Sorry, your gist couldn't be unstarred. " +
+            "Maybe GitHub is down or you don't have an internet connection.",
+                                                   preferredStyle: .Alert)
+        }
+        // add ok button
+        let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+        self.alertController?.addAction(okAction)
+        self.presentViewController(self.alertController!, animated:true, completion: nil)
+        return
+      }
+      self.isStarred = false
+      self.tableView.reloadRowsAtIndexPaths(
+        [NSIndexPath(forRow: 2, inSection: 0)],
+        withRowAnimation: .Automatic)
     }
   }
   
