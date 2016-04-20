@@ -37,7 +37,50 @@ class CreateGistViewController: XLFormViewController {
   }
   
   func savePressed(button: UIBarButtonItem) {
-    // TODO: implement
+    let validationErrors = self.formValidationErrors() as? [NSError]
+    guard validationErrors?.count == 0 else {
+      self.showFormValidationError(validationErrors!.first)
+      return
+    }
+    
+    self.tableView.endEditing(true)
+    let isPublic: Bool
+    if let isPublicValue = form.formRowWithTag("isPublic")?.value as? Bool {
+      isPublic = isPublicValue
+    } else {
+      isPublic = false
+    }
+    
+    guard let description = form.formRowWithTag("description")?.value as? String,
+      filename = form.formRowWithTag("filename")?.value as? String,
+      fileContent = form.formRowWithTag("fileContent")?.value as? String else {
+        print("could not get values from creation form")
+        return
+    }
+    
+    var files = [File]()
+    if let file = File(aName: filename, aContent: fileContent) {
+      files.append(file)
+    }
+    
+    GitHubAPIManager.sharedInstance.createNewGist(description, isPublic: isPublic, files: files) {
+      result in
+      guard result.error == nil,
+        let successValue = result.value
+        where successValue == true else {
+        print(result.error)
+        let alertController = UIAlertController(title: "Could not create gist",
+                                                message: "Sorry, your gist couldn't be created. " +
+          "Maybe GitHub is down or you don't have an internet connection.",
+                                                preferredStyle: .Alert)
+        // add ok button
+        let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+        alertController.addAction(okAction)
+        self.presentViewController(alertController, animated:true, completion: nil)
+        return
+      }
+      self.navigationController?.popViewControllerAnimated(true)
+    }
   }
   
   private func initializeForm() {
