@@ -40,14 +40,14 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         print(result.error)
         if result.error?.domain == NSURLErrorDomain {
           if result.error?.code == NSURLErrorUserAuthenticationRequired {
-          self.alertController = UIAlertController(title:
-            "Could not get starred status", message: result.error?.description,
-                                            preferredStyle: .Alert)
-          // add ok button
-          let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
-          self.alertController?.addAction(okAction)
-          self.presentViewController(self.alertController!, animated:true,
-                                     completion: nil)
+            self.alertController = UIAlertController(title:
+              "Could not get starred status", message: result.error?.description,
+                                              preferredStyle: .Alert)
+            // add ok button
+            let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+            self.alertController?.addAction(okAction)
+            self.presentViewController(self.alertController!, animated:true,
+                                       completion: nil)
           } else if result.error?.code == NSURLErrorNotConnectedToInternet {
             self.showOrangeNotConnectedBanner("No Internet Connection",
                                               message: "Can not display starred status. " +
@@ -69,6 +69,13 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
     super.viewDidLoad()
     // Do any additional setup after loading the view, typically from a nib.
     self.configureView()
+  }
+  
+  override func viewWillDisappear(animated: Bool) {
+    if let existingBanner = self.notConnectedBanner {
+      existingBanner.dismiss()
+    }
+    super.viewWillDisappear(animated)
   }
   
   func numberOfSectionsInTableView(tableView: UITableView) -> Int {

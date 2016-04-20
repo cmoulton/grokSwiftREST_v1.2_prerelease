@@ -53,6 +53,13 @@ SFSafariViewControllerDelegate {
     super.viewWillAppear(animated)
   }
   
+  override func viewWillDisappear(animated: Bool) {
+    if let existingBanner = self.notConnectedBanner {
+      existingBanner.dismiss()
+    }
+    super.viewWillDisappear(animated)
+  }
+  
   func loadGists(urlToLoad: String?) {
     GitHubAPIManager.sharedInstance.clearCache()
     self.isLoading = true
