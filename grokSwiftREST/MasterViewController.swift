@@ -81,6 +81,21 @@ SFSafariViewControllerDelegate {
           if result.error?.code == NSURLErrorUserAuthenticationRequired {
             self.showOAuthLoginView()
           } else if result.error?.code == NSURLErrorNotConnectedToInternet {
+            let path:Path
+            if self.gistSegmentedControl.selectedSegmentIndex == 0 {
+              path = .Public
+            } else if self.gistSegmentedControl.selectedSegmentIndex == 1 {
+              path = .Starred
+            } else {
+              path = .MyGists
+            }
+            if let archived:[Gist] = PersistenceManager.loadArray(path) {
+              self.gists = archived
+            } else {
+              self.gists = [] // don't have any saved gists
+            }
+            self.tableView.reloadData()
+            
             self.showNotConnectedBanner()
           }
         }
@@ -99,6 +114,16 @@ SFSafariViewControllerDelegate {
       }
       
       self.gists += fetchedGists
+      
+      let path:Path
+      if self.gistSegmentedControl.selectedSegmentIndex == 0 {
+        path = .Public
+      } else if self.gistSegmentedControl.selectedSegmentIndex == 1 {
+        path = .Starred
+      } else {
+        path = .MyGists
+      }
+      PersistenceManager.saveArray(self.gists, path: path)
       
       // update "last updated" title for refresh control
       let now = NSDate()
