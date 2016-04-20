@@ -10,30 +10,32 @@ import UIKit
 import PINRemoteImage
 import SafariServices
 import Alamofire
+import BRYXBanner
 
 class MasterViewController: UITableViewController,
   LoginViewDelegate,
-  SFSafariViewControllerDelegate {
+SFSafariViewControllerDelegate {
   @IBOutlet weak var gistSegmentedControl: UISegmentedControl!
-
+  var notConnectedBanner: Banner?
+  
   var detailViewController: DetailViewController? = nil
   var safariViewController: SFSafariViewController?
-    
+  
   var gists = [Gist]()
   var nextPageURLString: String?
   var isLoading = false
   var dateFormatter = NSDateFormatter()
-
+  
   override func viewDidLoad() {
     super.viewDidLoad()
     // Do any additional setup after loading the view, typically from a nib.
-
+    
     if let split = self.splitViewController {
-        let controllers = split.viewControllers
-        self.detailViewController = (controllers[controllers.count-1] as! UINavigationController).topViewController as? DetailViewController
+      let controllers = split.viewControllers
+      self.detailViewController = (controllers[controllers.count-1] as! UINavigationController).topViewController as? DetailViewController
     }
   }
-
+  
   override func viewWillAppear(animated: Bool) {
     self.clearsSelectionOnViewWillAppear = self.splitViewController!.collapsed
     
@@ -52,6 +54,7 @@ class MasterViewController: UITableViewController,
   }
   
   func loadGists(urlToLoad: String?) {
+    GitHubAPIManager.sharedInstance.clearCache()
     self.isLoading = true
     let completionHandler: (Result<[Gist], NSError>, String?) -> Void = { (result, nextPage) in
       self.isLoading = false
@@ -67,10 +70,14 @@ class MasterViewController: UITableViewController,
         self.nextPageURLString = nil
         
         self.isLoading = false
-        if result.error?.domain == NSURLErrorDomain &&
-          result.error?.code == NSURLErrorUserAuthenticationRequired {
-          self.showOAuthLoginView()
+        if result.error?.domain == NSURLErrorDomain {
+          if result.error?.code == NSURLErrorUserAuthenticationRequired {
+            self.showOAuthLoginView()
+          } else if result.error?.code == NSURLErrorNotConnectedToInternet {
+            self.showNotConnectedBanner()
+          }
         }
+        
         return
       }
       
@@ -95,17 +102,17 @@ class MasterViewController: UITableViewController,
     }
     
     switch gistSegmentedControl.selectedSegmentIndex {
-      case 0:
-        GitHubAPIManager.sharedInstance.fetchPublicGists(urlToLoad, completionHandler:
-          completionHandler)
-      case 1:
-        GitHubAPIManager.sharedInstance.fetchMyStarredGists(urlToLoad, completionHandler:
-          completionHandler)
-      case 2:
-        GitHubAPIManager.sharedInstance.fetchMyGists(urlToLoad, completionHandler:
-          completionHandler)
-      default:
-        print("got an index that I didn't expect for selectedSegmentIndex")
+    case 0:
+      GitHubAPIManager.sharedInstance.fetchPublicGists(urlToLoad, completionHandler:
+        completionHandler)
+    case 1:
+      GitHubAPIManager.sharedInstance.fetchMyStarredGists(urlToLoad, completionHandler:
+        completionHandler)
+    case 2:
+      GitHubAPIManager.sharedInstance.fetchMyGists(urlToLoad, completionHandler:
+        completionHandler)
+    default:
+      print("got an index that I didn't expect for selectedSegmentIndex")
     }
   }
   
@@ -176,15 +183,15 @@ class MasterViewController: UITableViewController,
     super.didReceiveMemoryWarning()
     // Dispose of any resources that can be recreated.
   }
-
+  
   // MARK: - Creation
   func insertNewObject(sender: AnyObject) {
     let createVC = CreateGistViewController(nibName: nil, bundle: nil)
     self.navigationController?.pushViewController(createVC, animated: true)
   }
-
+  
   // MARK: - Segues
-
+  
   override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
     if segue.identifier == "showDetail" {
       if let indexPath = self.tableView.indexPathForSelectedRow {
@@ -200,17 +207,17 @@ class MasterViewController: UITableViewController,
       }
     }
   }
-
+  
   // MARK: - Table View
-
+  
   override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
     return 1
   }
-
+  
   override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
     return gists.count
   }
-
+  
   override func tableView(tableView: UITableView, cellForRowAtIndexPath
     indexPath: NSIndexPath) -> UITableViewCell {
     let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath)
@@ -232,7 +239,7 @@ class MasterViewController: UITableViewController,
       let rowsLoaded = gists.count
       let rowsRemaining = rowsLoaded - indexPath.row
       let rowsToLoadFromBottom = 5
-    
+      
       if rowsRemaining <= rowsToLoadFromBottom {
         if let nextPage = nextPageURLString {
           self.loadGists(nextPage)
@@ -242,7 +249,7 @@ class MasterViewController: UITableViewController,
     
     return cell
   }
-
+  
   override func tableView(tableView: UITableView, canEditRowAtIndexPath indexPath:
     NSIndexPath) -> Bool {
     // Return false if you do not want the specified item to be editable.
@@ -323,4 +330,20 @@ class MasterViewController: UITableViewController,
     // then load the new list of gists
     loadGists(nil)
   }
+  
+  func showNotConnectedBanner() {
+    // show not connected error & tell em to try again when they do have a connection
+    // check for existing banner
+    if let existingBanner = self.notConnectedBanner {
+      existingBanner.dismiss()
+    }
+    self.notConnectedBanner = Banner(title: "No Internet Connection",
+                                     subtitle: "Could not load gists." +
+      " Try again when you're connected to the internet",
+                                     image: nil,
+                                     backgroundColor: UIColor.redColor())
+    self.notConnectedBanner?.dismissesOnSwipe = true
+    self.notConnectedBanner?.show(duration: nil)
+  }
+
 }
