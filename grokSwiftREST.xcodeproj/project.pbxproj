@@ -23,6 +23,7 @@
 		CFE6F4221CC3E3C70031B95E /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE6F4211CC3E3C70031B95E /* LoginViewController.swift */; };
 		CFE6F4241CC3E5280031B95E /* SafariServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CFE6F4231CC3E5280031B95E /* SafariServices.framework */; };
 		CFE6F4261CC5335B0031B95E /* File.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE6F4251CC5335B0031B95E /* File.swift */; };
+		CFE6F4281CC7BFF50031B95E /* CreateGistViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE6F4271CC7BFF50031B95E /* CreateGistViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@
 		CFE6F4211CC3E3C70031B95E /* LoginViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
 		CFE6F4231CC3E5280031B95E /* SafariServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SafariServices.framework; path = System/Library/Frameworks/SafariServices.framework; sourceTree = SDKROOT; };
 		CFE6F4251CC5335B0031B95E /* File.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = File.swift; sourceTree = "<group>"; };
+		CFE6F4271CC7BFF50031B95E /* CreateGistViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreateGistViewController.swift; sourceTree = "<group>"; };
 		F23B78ED821C2F6DE6AE052B /* Pods.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FFE13B480F56CA2AC14A16C3 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -104,6 +106,7 @@
 				CF666ECD1CB020FD008214D0 /* MasterViewController.swift */,
 				CF666ECF1CB020FD008214D0 /* DetailViewController.swift */,
 				CFE6F4211CC3E3C70031B95E /* LoginViewController.swift */,
+				CFE6F4271CC7BFF50031B95E /* CreateGistViewController.swift */,
 				CF666EDF1CB02A39008214D0 /* GitHubAPIManager.swift */,
 				CF666EE11CB02AAF008214D0 /* GistRouter.swift */,
 				CFE6F4181CC031CC0031B95E /* Gist.swift */,
@@ -251,6 +254,7 @@
 				CF666ECE1CB020FD008214D0 /* MasterViewController.swift in Sources */,
 				CF666EE21CB02AAF008214D0 /* GistRouter.swift in Sources */,
 				CF666ECC1CB020FD008214D0 /* AppDelegate.swift in Sources */,
+				CFE6F4281CC7BFF50031B95E /* CreateGistViewController.swift in Sources */,
 				CFE6F41D1CC0388A0031B95E /* AlamofireRequest+JSONSerializable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
