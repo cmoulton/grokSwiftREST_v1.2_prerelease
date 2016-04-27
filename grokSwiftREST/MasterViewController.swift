@@ -66,6 +66,35 @@ SFSafariViewControllerDelegate {
     super.viewWillDisappear(animated)
   }
   
+  func handleLoadGistsError(result:Result<[Gist], NSError>){
+    print(result.error)
+    self.nextPageURLString = nil
+    
+    self.isLoading = false
+    if result.error?.domain == NSURLErrorDomain {
+        if result.error?.code == NSURLErrorUserAuthenticationRequired {
+            self.showOAuthLoginView()
+        } else if result.error?.code == NSURLErrorNotConnectedToInternet {
+            let path:Path
+            if self.gistSegmentedControl.selectedSegmentIndex == 0 {
+                path = .Public
+            } else if self.gistSegmentedControl.selectedSegmentIndex == 1 {
+                path = .Starred
+            } else {
+                path = .MyGists
+            }
+            if let archived:[Gist] = PersistenceManager.loadArray(path) {
+                self.gists = archived
+            } else {
+                self.gists = [] // don't have any saved gists
+            }
+            self.tableView.reloadData()
+            
+            self.showNotConnectedBanner()
+        }
+    }
+  }
+    
   func loadGists(urlToLoad: String?) {
     GitHubAPIManager.sharedInstance.clearCache()
     self.isLoading = true
@@ -79,33 +108,7 @@ SFSafariViewControllerDelegate {
       }
       
       guard result.error == nil else {
-        print(result.error)
-        self.nextPageURLString = nil
-        
-        self.isLoading = false
-        if result.error?.domain == NSURLErrorDomain {
-          if result.error?.code == NSURLErrorUserAuthenticationRequired {
-            self.showOAuthLoginView()
-          } else if result.error?.code == NSURLErrorNotConnectedToInternet {
-            let path:Path
-            if self.gistSegmentedControl.selectedSegmentIndex == 0 {
-              path = .Public
-            } else if self.gistSegmentedControl.selectedSegmentIndex == 1 {
-              path = .Starred
-            } else {
-              path = .MyGists
-            }
-            if let archived:[Gist] = PersistenceManager.loadArray(path) {
-              self.gists = archived
-            } else {
-              self.gists = [] // don't have any saved gists
-            }
-            self.tableView.reloadData()
-            
-            self.showNotConnectedBanner()
-          }
-        }
-        
+        self.handleLoadGistsError(result)
         return
       }
       
