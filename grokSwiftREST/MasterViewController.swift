@@ -206,13 +206,11 @@ SFSafariViewControllerDelegate {
   func didTapLoginButton() {
     self.dismissViewControllerAnimated(false) {
       guard let authURL = GitHubAPIManager.sharedInstance.URLToStartOAuth2Login() else {
-        if let completionHandler = GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler {
-          let error = NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
+        GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler?(
+          NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
                               userInfo: [NSLocalizedDescriptionKey:
                                 "Could not create an OAuth authorization URL",
-                                NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"])
-          completionHandler(error)
-        }
+                                NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"]))
         return
       }
       self.safariViewController = SFSafariViewController(URL: authURL)
@@ -355,13 +353,12 @@ SFSafariViewControllerDelegate {
       GitHubAPIManager.sharedInstance.isAPIOnline { isOnline in
         if !isOnline {
           print("error: api offline")
-          if let completionHandler = GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler {
-            let error = NSError(domain: NSURLErrorDomain, code:
+          GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler?(
+            NSError(domain: NSURLErrorDomain, code:
               NSURLErrorNotConnectedToInternet,
               userInfo: [NSLocalizedDescriptionKey: "No Internet Connection or GitHub is Offline",
-              NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"])
-            completionHandler(error)
-          }
+              NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"]))
+        
         }
       }
     }
