@@ -391,12 +391,7 @@ class GitHubAPIManager {
   
   func createNewGist(description: String, isPublic: Bool, files: [File],
                      completionHandler: (Result<Bool, NSError>) -> Void) {
-    let publicString: String
-    if isPublic {
-      publicString = "true"
-    } else {
-      publicString = "false"
-    }
+    let publicString = isPublic ? "true" : "false"
     
     var filesDictionary = [String: AnyObject]()
     for file in files {
