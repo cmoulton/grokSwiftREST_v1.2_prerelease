@@ -30,9 +30,15 @@ SFSafariViewControllerDelegate {
     super.viewDidLoad()
     // Do any additional setup after loading the view, typically from a nib.
     
-    if let split = self.splitViewController {
-      let controllers = split.viewControllers
-      self.detailViewController = (controllers[controllers.count-1] as! UINavigationController).topViewController as? DetailViewController
+    if self.splitViewController?.viewControllers.count >= 2 {
+      /*EDITOR-NOTE: In some orinetations, a detail view controller is not visisble, and
+         is not in the list of view controllers. In that situation, there is only 1 view controller
+         which means we cannot reliabilty get the detail view controller.
+         
+         .last gets the last member of an array, and is generally preferrable to the old array.count-1 pattern
+      */
+      let detailViewNavController = self.splitViewController?.viewControllers.last as! UINavigationController
+      self.detailViewController = detailViewNavController.topViewController as? DetailViewController
     }
   }
   
