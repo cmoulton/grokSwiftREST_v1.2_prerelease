@@ -24,7 +24,7 @@ class PersistenceManager {
   
   class func saveArray<T: NSCoding>(arrayToSave: [T], path: Path) {
     let file = documentsDirectory().stringByAppendingPathComponent(path.rawValue)
-    NSKeyedArchiver.archiveRootObject(arrayToSave, toFile: file)
+    NSKeyedArchiver.archiveRootObject(arrayToSave, toFile: file) //EDITOR-TODO: this can fail, especially on 8/16gb iPhones filled with music
   }
   
   class func loadArray<T: NSCoding>(path: Path) -> [T]? {
