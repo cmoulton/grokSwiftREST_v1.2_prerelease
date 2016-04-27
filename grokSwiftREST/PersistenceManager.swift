@@ -18,7 +18,7 @@ class PersistenceManager {
   class private func documentsDirectory() -> NSString {
     let paths = NSSearchPathForDirectoriesInDomains(.DocumentDirectory,
                                                     .UserDomainMask, true)
-    let documentDirectory = paths[0] as String
+    let documentDirectory = paths[0] as NSString
     return documentDirectory
   }
   
