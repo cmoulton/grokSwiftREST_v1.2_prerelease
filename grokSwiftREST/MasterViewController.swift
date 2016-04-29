@@ -236,16 +236,11 @@ SFSafariViewControllerDelegate {
   
   override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
     if segue.identifier == "showDetail" {
-      if let indexPath = self.tableView.indexPathForSelectedRow {
-        let gist = gists[indexPath.row] as Gist
-        if let detailViewController = (segue.destinationViewController as!
-          UINavigationController).topViewController as?
-          DetailViewController {
-          detailViewController.gist = gist
-          detailViewController.navigationItem.leftBarButtonItem =
-            self.splitViewController?.displayModeButtonItem()
+      if let indexPath = self.tableView.indexPathForSelectedRow,
+        detailViewController = (segue.destinationViewController as? UINavigationController)?.topViewController as? DetailViewController{
+          detailViewController.gist = gists[indexPath.row] as Gist
+          detailViewController.navigationItem.leftBarButtonItem = self.splitViewController?.displayModeButtonItem()
           detailViewController.navigationItem.leftItemsSupplementBackButton = true
-        }
       }
     }
   }
