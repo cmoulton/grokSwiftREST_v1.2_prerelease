@@ -129,31 +129,26 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
   }
   
   func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-    if indexPath.section == 0 {
-      if indexPath.row == 2 { // star or unstar
-        guard let starred = isStarred else {
-          return
+
+    switch (indexPath.section, indexPath.row, isStarred){
+    case (0, 2, .Some(true)):
+        unstarThisGist()
+    case (0, 2, .Some(false)):
+        starThisGist()
+    case (1, _, _):
+        guard let file = gist?.files?[indexPath.row],
+            urlString = file.raw_url,
+            url = NSURL(string: urlString) else {
+                return
         }
-        if starred {
-          // unstar
-          unstarThisGist()
-        } else {
-          // star
-          starThisGist()
-        }
-      }
-    } else if indexPath.section == 1 {
-      guard let file = gist?.files?[indexPath.row],
-        urlString = file.raw_url,
-        url = NSURL(string: urlString) else {
-          return
-      }
-      let safariViewController = SFSafariViewController(URL: url)
-      safariViewController.title = file.filename
-      self.navigationController?.pushViewController(safariViewController, animated: true)
+        let safariViewController = SFSafariViewController(URL: url)
+        safariViewController.title = file.filename
+        self.navigationController?.pushViewController(safariViewController, animated: true)
+    default:
+        print("No-op")
     }
   }
-  
+
   func starThisGist() {
     guard let gistId = gist?.id else {
       return
