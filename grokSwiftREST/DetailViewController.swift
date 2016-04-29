@@ -38,21 +38,22 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
       result in
       guard result.error == nil else {
         print(result.error)
-        if result.error?.domain == NSURLErrorDomain {
-          if result.error?.code == NSURLErrorUserAuthenticationRequired {
-            self.alertController = UIAlertController(title:
+        if result.error?.domain != NSURLErrorDomain {return}
+
+        if result.error?.code == NSURLErrorUserAuthenticationRequired {
+          self.alertController = UIAlertController(title:
               "Could not get starred status", message: result.error?.description,
                                               preferredStyle: .Alert)
-            // add ok button
-            let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
-            self.alertController?.addAction(okAction)
-            self.presentViewController(self.alertController!, animated:true,
+          // add ok button
+          let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+          self.alertController?.addAction(okAction)
+          self.presentViewController(self.alertController!, animated:true,
                                        completion: nil)
-          } else if result.error?.code == NSURLErrorNotConnectedToInternet {
-            self.showOrangeNotConnectedBanner("No Internet Connection",
-                                              message: "Can not display starred status. " +
-              "Try again when you're connected to the internet")
-          }
+        } else if result.error?.code == NSURLErrorNotConnectedToInternet {
+          self.showOrangeNotConnectedBanner("No Internet Connection",
+            message: "Can not display starred status. " +
+            "Try again when you're connected to the internet")
+
         }
         return
       }
@@ -103,58 +104,51 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
   }
   
   func tableView(tableView: UITableView, cellForRowAtIndexPath
-    indexPath: NSIndexPath)
-    -> UITableViewCell {
+    indexPath: NSIndexPath) -> UITableViewCell {
       let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath)
-      
-      if indexPath.section == 0 {
-        if indexPath.row == 0 {
-          cell.textLabel?.text = gist?.gistDescription
-        } else if indexPath.row == 1 {
-          cell.textLabel?.text = gist?.ownerLogin
-        } else {
-          if let starred = isStarred {
-            if starred {
-              cell.textLabel?.text = "Unstar"
-            } else {
-              cell.textLabel?.text = "Star"
-            }
-          }
-        }
-      } else {
-        if let file = gist?.files?[indexPath.row] {
-          cell.textLabel?.text = file.filename
-        }
+
+      var cellText:String
+      switch (indexPath.section, indexPath.row, isStarred){
+      case (0, 0, _):
+        cellText = gist?.gistDescription ?? ""
+      case (0, 1, _):
+        cellText = gist?.ownerLogin ?? ""
+      case (0, _, .None):
+        cellText = ""
+      case (0, _, .Some(true)):
+        cellText = "Unstar"
+      case (0, _, .Some(false)):
+        cellText = "Star"
+      default:
+        cellText = gist?.files?[indexPath.row].filename ?? ""
       }
+
+      cell.textLabel?.text = cellText
+
       return cell
   }
   
   func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-    if indexPath.section == 0 {
-      if indexPath.row == 2 { // star or unstar
-        guard let starred = isStarred else {
-          return
+
+    switch (indexPath.section, indexPath.row, isStarred){
+    case (0, 2, .Some(true)):
+        unstarThisGist()
+    case (0, 2, .Some(false)):
+        starThisGist()
+    case (1, _, _):
+        guard let file = gist?.files?[indexPath.row],
+            urlString = file.raw_url,
+            url = NSURL(string: urlString) else {
+                return
         }
-        if starred {
-          // unstar
-          unstarThisGist()
-        } else {
-          // star
-          starThisGist()
-        }
-      }
-    } else if indexPath.section == 1 {
-      guard let file = gist?.files?[indexPath.row],
-        urlString = file.raw_url,
-        url = NSURL(string: urlString) else {
-          return
-      }
-      let safariViewController = SFSafariViewController(URL: url)
-      safariViewController.title = file.filename
-      self.navigationController?.pushViewController(safariViewController, animated: true)
+        let safariViewController = SFSafariViewController(URL: url)
+        safariViewController.title = file.filename
+        self.navigationController?.pushViewController(safariViewController, animated: true)
+    default:
+        print("No-op")
     }
   }
-  
+
   func starThisGist() {
     guard let gistId = gist?.id else {
       return

@@ -136,13 +136,10 @@ class GitHubAPIManager {
         guard response.result.error == nil,
           let receivedResults = response.result.value else {
             print(response.result.error!)
-            if let completionHandler = self.OAuthTokenCompletionHandler {
-              let error = NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
-                userInfo: [NSLocalizedDescriptionKey:
-                  "Could not obtain an OAuth token",
-                  NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"])
-              completionHandler(error)
-            }
+            self.OAuthTokenCompletionHandler?(
+                NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
+                    userInfo: [NSLocalizedDescriptionKey:"Could not obtain an OAuth token",
+                        NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"]))
             self.isLoadingOAuthToken = false
             return
         }
@@ -151,13 +148,10 @@ class GitHubAPIManager {
         guard let jsonData = receivedResults.dataUsingEncoding(NSUTF8StringEncoding,
           allowLossyConversion: false) else {
             print("no data received or data not JSON")
-            if let completionHandler = self.OAuthTokenCompletionHandler {
-              let error = NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
-                userInfo: [NSLocalizedDescriptionKey:
-                  "Could not obtain an OAuth token",
-                  NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"])
-              completionHandler(error)
-            }
+            self.OAuthTokenCompletionHandler?(
+                NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
+                    userInfo: [NSLocalizedDescriptionKey:"Could not obtain an OAuth token",
+                        NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"]))
             self.isLoadingOAuthToken = false
             return
         }
@@ -165,17 +159,15 @@ class GitHubAPIManager {
         self.OAuthToken = self.parseOAuthTokenResponse(jsonResults)
         self.isLoadingOAuthToken = false
         
-        if let completionHandler = self.OAuthTokenCompletionHandler {
-          if (self.hasOAuthToken()) {
-            completionHandler(nil)
-          } else  {
-            let noOAuthError = NSError(domain: GitHubAPIManager.ErrorDomain,
+        if(!self.hasOAuthToken()){
+            self.OAuthTokenCompletionHandler?(NSError(domain: GitHubAPIManager.ErrorDomain,
               code: -1, userInfo:
               [NSLocalizedDescriptionKey: "Could not obtain an OAuth token",
-                NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"])
-            completionHandler(noOAuthError)
-          }
+                NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"]))
+            return
         }
+        
+        self.OAuthTokenCompletionHandler?(nil)
     }
   }
   
@@ -183,13 +175,10 @@ class GitHubAPIManager {
     // extract the code from the URL
     guard let code = extractCodeFromOAuthStep1Response(url) else {
       self.isLoadingOAuthToken = false
-      if let completionHandler = self.OAuthTokenCompletionHandler {
-        let error = NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
-                            userInfo: [NSLocalizedDescriptionKey:
-                              "Could not obtain an OAuth code",
-                              NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"])
-        completionHandler(error)
-      }
+      self.OAuthTokenCompletionHandler?(
+        NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
+            userInfo: [NSLocalizedDescriptionKey:"Could not obtain an OAuth code",
+                       NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"]))
       return
     }
     
@@ -391,12 +380,7 @@ class GitHubAPIManager {
   
   func createNewGist(description: String, isPublic: Bool, files: [File],
                      completionHandler: (Result<Bool, NSError>) -> Void) {
-    let publicString: String
-    if isPublic {
-      publicString = "true"
-    } else {
-      publicString = "false"
-    }
+    let publicString = isPublic ? "true" : "false"
     
     var filesDictionary = [String: AnyObject]()
     for file in files {

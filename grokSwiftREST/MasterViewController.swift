@@ -30,9 +30,15 @@ SFSafariViewControllerDelegate {
     super.viewDidLoad()
     // Do any additional setup after loading the view, typically from a nib.
     
-    if let split = self.splitViewController {
-      let controllers = split.viewControllers
-      self.detailViewController = (controllers[controllers.count-1] as! UINavigationController).topViewController as? DetailViewController
+    if self.splitViewController?.viewControllers.count >= 2 {
+      /*EDITOR-NOTE: In some orinetations, a detail view controller is not visisble, and
+         is not in the list of view controllers. In that situation, there is only 1 view controller
+         which means we cannot reliabilty get the detail view controller.
+         
+         .last gets the last member of an array, and is generally preferrable to the old array.count-1 pattern
+      */
+      let detailViewNavController = self.splitViewController?.viewControllers.last as! UINavigationController
+      self.detailViewController = detailViewNavController.topViewController as? DetailViewController
     }
   }
   
@@ -60,6 +66,30 @@ SFSafariViewControllerDelegate {
     super.viewWillDisappear(animated)
   }
   
+  func handleLoadGistsError(result:Result<[Gist], NSError>){
+    print(result.error)
+    self.nextPageURLString = nil
+    
+    self.isLoading = false
+    if result.error?.domain != NSURLErrorDomain { return }
+
+
+    if result.error?.code == NSURLErrorUserAuthenticationRequired {
+        self.showOAuthLoginView()
+    } else if result.error?.code == NSURLErrorNotConnectedToInternet {
+        let path:Path = [.Public, .Starred, .MyGists][self.gistSegmentedControl.selectedSegmentIndex]
+        
+        if let archived:[Gist] = PersistenceManager.loadArray(path) {
+            self.gists = archived
+        } else {
+            self.gists = [] // don't have any saved gists
+        }
+        self.tableView.reloadData()
+            
+        self.showNotConnectedBanner()
+    }
+  }
+    
   func loadGists(urlToLoad: String?) {
     GitHubAPIManager.sharedInstance.clearCache()
     self.isLoading = true
@@ -73,33 +103,7 @@ SFSafariViewControllerDelegate {
       }
       
       guard result.error == nil else {
-        print(result.error)
-        self.nextPageURLString = nil
-        
-        self.isLoading = false
-        if result.error?.domain == NSURLErrorDomain {
-          if result.error?.code == NSURLErrorUserAuthenticationRequired {
-            self.showOAuthLoginView()
-          } else if result.error?.code == NSURLErrorNotConnectedToInternet {
-            let path:Path
-            if self.gistSegmentedControl.selectedSegmentIndex == 0 {
-              path = .Public
-            } else if self.gistSegmentedControl.selectedSegmentIndex == 1 {
-              path = .Starred
-            } else {
-              path = .MyGists
-            }
-            if let archived:[Gist] = PersistenceManager.loadArray(path) {
-              self.gists = archived
-            } else {
-              self.gists = [] // don't have any saved gists
-            }
-            self.tableView.reloadData()
-            
-            self.showNotConnectedBanner()
-          }
-        }
-        
+        self.handleLoadGistsError(result)
         return
       }
       
@@ -115,14 +119,7 @@ SFSafariViewControllerDelegate {
       
       self.gists += fetchedGists
       
-      let path:Path
-      if self.gistSegmentedControl.selectedSegmentIndex == 0 {
-        path = .Public
-      } else if self.gistSegmentedControl.selectedSegmentIndex == 1 {
-        path = .Starred
-      } else {
-        path = .MyGists
-      }
+      let path:Path = [.Public, .Starred, .MyGists][self.gistSegmentedControl.selectedSegmentIndex]
       PersistenceManager.saveArray(self.gists, path: path)
       
       // update "last updated" title for refresh control
@@ -178,31 +175,35 @@ SFSafariViewControllerDelegate {
     
     if (!GitHubAPIManager.sharedInstance.hasOAuthToken()) {
       showOAuthLoginView()
-    } else {
-      loadGists(nil)
+      return
     }
+
+    loadGists(nil)
+
   }
   
   func showOAuthLoginView() {
     let storyboard = UIStoryboard(name: "Main", bundle: NSBundle.mainBundle())
     GitHubAPIManager.sharedInstance.isLoadingOAuthToken = true
-    if let loginVC = storyboard.instantiateViewControllerWithIdentifier(
-      "LoginViewController") as? LoginViewController {
-      loginVC.delegate = self
-      self.presentViewController(loginVC, animated: true, completion: nil)
+    guard let loginVC = storyboard.instantiateViewControllerWithIdentifier(
+      "LoginViewController") as? LoginViewController else {
+        assert(false, "Misnamed view controller")
+        return
     }
+
+    loginVC.delegate = self
+    self.presentViewController(loginVC, animated: true, completion: nil)
+
   }
   
   func didTapLoginButton() {
     self.dismissViewControllerAnimated(false) {
       guard let authURL = GitHubAPIManager.sharedInstance.URLToStartOAuth2Login() else {
-        if let completionHandler = GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler {
-          let error = NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
+        GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler?(
+          NSError(domain: GitHubAPIManager.ErrorDomain, code: -1,
                               userInfo: [NSLocalizedDescriptionKey:
                                 "Could not create an OAuth authorization URL",
-                                NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"])
-          completionHandler(error)
-        }
+                                NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"]))
         return
       }
       self.safariViewController = SFSafariViewController(URL: authURL)
@@ -229,16 +230,11 @@ SFSafariViewControllerDelegate {
   
   override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
     if segue.identifier == "showDetail" {
-      if let indexPath = self.tableView.indexPathForSelectedRow {
-        let gist = gists[indexPath.row] as Gist
-        if let detailViewController = (segue.destinationViewController as!
-          UINavigationController).topViewController as?
-          DetailViewController {
-          detailViewController.gist = gist
-          detailViewController.navigationItem.leftBarButtonItem =
-            self.splitViewController?.displayModeButtonItem()
+      if let indexPath = self.tableView.indexPathForSelectedRow,
+        detailViewController = (segue.destinationViewController as? UINavigationController)?.topViewController as? DetailViewController{
+          detailViewController.gist = gists[indexPath.row] as Gist
+          detailViewController.navigationItem.leftBarButtonItem = self.splitViewController?.displayModeButtonItem()
           detailViewController.navigationItem.leftItemsSupplementBackButton = true
-        }
       }
     }
   }
@@ -345,13 +341,12 @@ SFSafariViewControllerDelegate {
       GitHubAPIManager.sharedInstance.isAPIOnline { isOnline in
         if !isOnline {
           print("error: api offline")
-          if let completionHandler = GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler {
-            let error = NSError(domain: NSURLErrorDomain, code:
+          GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler?(
+            NSError(domain: NSURLErrorDomain, code:
               NSURLErrorNotConnectedToInternet,
               userInfo: [NSLocalizedDescriptionKey: "No Internet Connection or GitHub is Offline",
-              NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"])
-            completionHandler(error)
-          }
+              NSLocalizedRecoverySuggestionErrorKey: "Please retry your request"]))
+        
         }
       }
     }
