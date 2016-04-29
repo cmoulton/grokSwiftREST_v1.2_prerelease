@@ -181,7 +181,7 @@ SFSafariViewControllerDelegate {
     
     if (!GitHubAPIManager.sharedInstance.hasOAuthToken()) {
       showOAuthLoginView()
-      return 
+      return
     }
 
     loadGists(nil)
@@ -191,11 +191,15 @@ SFSafariViewControllerDelegate {
   func showOAuthLoginView() {
     let storyboard = UIStoryboard(name: "Main", bundle: NSBundle.mainBundle())
     GitHubAPIManager.sharedInstance.isLoadingOAuthToken = true
-    if let loginVC = storyboard.instantiateViewControllerWithIdentifier(
-      "LoginViewController") as? LoginViewController {
-      loginVC.delegate = self
-      self.presentViewController(loginVC, animated: true, completion: nil)
+    guard let loginVC = storyboard.instantiateViewControllerWithIdentifier(
+      "LoginViewController") as? LoginViewController else {
+        assert(false, "Misnamed view controller")
+        return
     }
+
+    loginVC.delegate = self
+    self.presentViewController(loginVC, animated: true, completion: nil)
+
   }
   
   func didTapLoginButton() {
