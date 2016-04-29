@@ -125,14 +125,7 @@ SFSafariViewControllerDelegate {
       
       self.gists += fetchedGists
       
-      let path:Path
-      if self.gistSegmentedControl.selectedSegmentIndex == 0 {
-        path = .Public
-      } else if self.gistSegmentedControl.selectedSegmentIndex == 1 {
-        path = .Starred
-      } else {
-        path = .MyGists
-      }
+      let path:Path = [.Public, .Starred, .MyGists][self.gistSegmentedControl.selectedSegmentIndex]
       PersistenceManager.saveArray(self.gists, path: path)
       
       // update "last updated" title for refresh control
