@@ -181,9 +181,11 @@ SFSafariViewControllerDelegate {
     
     if (!GitHubAPIManager.sharedInstance.hasOAuthToken()) {
       showOAuthLoginView()
-    } else {
-      loadGists(nil)
+      return 
     }
+
+    loadGists(nil)
+
   }
   
   func showOAuthLoginView() {
